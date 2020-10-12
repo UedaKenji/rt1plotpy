@@ -211,5 +211,5 @@ class dxf_importer():
 
         self.Is_in = (self.fill == 2)
         self.Is_out = (self.fill == 0)
-        self.NaN_factor = np.where(self.fill ==0, np.nan, 1.0)
+        self.NaN_factor = np.where(self.fill ==2 , 1.0, np.nan)
         self.imshow_extent = (R_extend[0],R_extend[-1],Z_extend[0],Z_extend[-1])
