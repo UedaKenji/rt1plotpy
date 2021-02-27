@@ -50,6 +50,19 @@ class Frame():
                 ax.text(x, y, "a."+str(i), size = 10, color = "red")
 
     def grid_input(self,R,Z,fill_point=(0.5,0)):
+
+        if len(R.shape) == 2:
+            if abs(R[-1,0]-R[0,0]) < 1e-3:
+                R = R[0,:]
+            else :
+                R = R[:,0]
+                
+        if len(Z.shape) == 2:
+            if abs(Z[-1,0]-Z[0,0]) < 1e-3:
+                Z = Z[0,:]
+            else :
+                Z = Z[:,0]
+
         h,w = Z.size,R.size
         R_extend = np.empty(R.size+1)
         Z_extend = np.empty(Z.size+1)
