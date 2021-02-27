@@ -1,10 +1,17 @@
 import matplotlib.patches as patches
+import matplotlib.pyplot as plt
 import numpy as np
 import dxfgrabber
 import cv2
+from typing import Callable, Tuple, Optional, Union, List
+
 
 class Frame():
-    def __init__(self,dxf_file:str):
+    def __init__(
+        self,
+        dxf_file:str
+    ) -> None:
+    
         dxf = dxfgrabber.readfile(dxf_file)
         print("DXF version: {}".format(dxf.dxfversion))
         self.header_var_count = len(dxf.header) # dict of dxf header vars
@@ -18,7 +25,12 @@ class Frame():
         print('num of circs: ',len(self.all_circles))
         print('num of arcs : ',len(self.all_arcs))
 
-    def append_frame(self,ax,label:bool=False,**kwargs):
+    def append_frame(
+        self,
+        ax      :plt.axes,
+        label   :bool=False,
+        **kwargs:dict
+    ) -> None:
 
         default_kwargs = {"linewidth":1, "alpha":1.0, "color":'gray'}
         default_kwargs.update(kwargs)
@@ -49,7 +61,12 @@ class Frame():
                 y = self.all_arcs[i].center[1]/1000+  self.all_arcs[i].radius/1000*np.sin(np.pi* self.all_arcs[i].start_angle/180)
                 ax.text(x, y, "a."+str(i), size = 10, color = "red")
 
-    def grid_input(self,R,Z,fill_point=(0.5,0)):
+    def grid_input(
+        self,
+        R: np.ndarray,
+        Z: np.ndarray,
+        fill_point: Tuple[float,float] = (0.5,0)
+    ) -> Tuple[np.ndarray, np.ndarray]:
 
         if len(R.shape) == 2:
             if abs(R[-1,0]-R[0,0]) < 1e-3:
@@ -215,7 +232,7 @@ class Frame():
                 i_z =  i 
                 break 
 
-        print(i_r,i_z)
+        #print(i_r,i_z)
 
         self.fill =  np.zeros((h,w), np.uint8)
         self.fill[:,:] = 1 *self.Is_bound[:,:]                        
@@ -227,3 +244,5 @@ class Frame():
         self.Is_out = (self.fill == 0)
         self.NaN_factor = np.where(self.fill ==2 , 1.0, np.nan)
         self.imshow_extent = (R_extend[0],R_extend[-1],Z_extend[0],Z_extend[-1])
+
+        return  self.NaN_factor, self.imshow_extent
