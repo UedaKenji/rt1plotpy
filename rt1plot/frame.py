@@ -3,7 +3,7 @@ import numpy as np
 import dxfgrabber
 import cv2
 
-class dxf_importer():
+class Frame():
     def __init__(self,dxf_file:str):
         dxf = dxfgrabber.readfile(dxf_file)
         print("DXF version: {}".format(dxf.dxfversion))
@@ -18,14 +18,17 @@ class dxf_importer():
         print('num of circs: ',len(self.all_circles))
         print('num of arcs : ',len(self.all_arcs))
 
-    def append_frame(self,ax,label:bool=False,linewidth=1,alpha=1.0,color='gray'):
+    def append_frame(self,ax,label:bool=False,**kwargs):
+
+        default_kwargs = {"linewidth":1, "alpha":1.0, "color":'gray'}
+        default_kwargs.update(kwargs)
+        kwargs = default_kwargs
+        
         #線をプロット
         for i in range(len(self.all_lines)):
             ax.plot([self.all_lines[i].start[0]/1000, self.all_lines[i].end[0]/1000],
                     [self.all_lines[i].start[1]/1000, self.all_lines[i].end[1]/1000],
-                    color = color,
-                    alpha = alpha,
-                    linewidth = linewidth)
+                    **kwargs)
             if label:
                 ax.text(self.all_lines[i].start[0]/1000, self.all_lines[i].start[1]/1000, "l."+str(i), size = 10, color = "blue")
 
@@ -38,9 +41,7 @@ class dxf_importer():
                     height = self.all_arcs[i].radius*2/1000,
                     theta1 = self.all_arcs[i].start_angle,
                     theta2 = self.all_arcs[i].end_angle,
-                    color = color,
-                    alpha = alpha,
-                    linewidth = linewidth)
+                    **kwargs)
 
              ) 
             if label:

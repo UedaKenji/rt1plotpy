@@ -15,6 +15,7 @@ cvf2 = -28.8e3
 #-----------------------------------------#
 xcc = 2.e-7
 
+__all__ = ['rathe','psi','curvature_2d','bvec','b0','l']
 
 #     ============================================================================
 def rathe(rc, r, z, ci):
@@ -91,6 +92,8 @@ def bloop(rc, r, z, ci):
     return br*np.logical_not(singular), bz
 
 def curvature_2d(r,z,separatrix=True):
+    if not r.shape == z.shape:
+      print('Error! the shape of r and z is not match')
     dBrdr = np.zeros_like(r)
     dBrdz = np.zeros_like(r)
     dBzdr = np.zeros_like(r)
