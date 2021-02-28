@@ -11,7 +11,7 @@ class Frame():
         self,
         dxf_file:str
     ) -> None:
-    
+
         dxf = dxfgrabber.readfile(dxf_file)
         print("DXF version: {}".format(dxf.dxfversion))
         self.header_var_count = len(dxf.header) # dict of dxf header vars
@@ -29,6 +29,7 @@ class Frame():
         self,
         ax      :plt.axes,
         label   :bool=False,
+        add_coil:bool=False,
         **kwargs:dict
     ) -> None:
 
@@ -60,6 +61,24 @@ class Frame():
                 x = self.all_arcs[i].center[0]/1000+  self.all_arcs[i].radius/1000*np.cos(np.pi* self.all_arcs[i].start_angle/180)
                 y = self.all_arcs[i].center[1]/1000+  self.all_arcs[i].radius/1000*np.sin(np.pi* self.all_arcs[i].start_angle/180)
                 ax.text(x, y, "a."+str(i), size = 10, color = "red")
+        if add_coil:
+            ax.add_patch(
+                patches.Rectangle(xy=(0.214625, -0.0336), 
+                                  width=0.07075,
+                                  height=0.0672,
+                                  edgecolor = 'black',
+                                  facecolor='brown'
+                )
+            )
+            ax.add_patch(
+                patches.Rectangle(xy=(0.364, 0.528), 
+                                  width=0.072,
+                                  height=0.144,
+                                  edgecolor = 'black',
+                                  facecolor='brown'
+                )
+            )
+
 
     def grid_input(
         self,

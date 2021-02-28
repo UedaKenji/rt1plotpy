@@ -1,6 +1,6 @@
 import numpy as np 
 import scipy.special as spe
-
+from typing import Callable, Tuple, Optional, Union, List
 '''
 modified by ueda in 20201008
 古のrt1mag.pyをnumpyのarray を引数にモテるようにモダナイズした。
@@ -18,7 +18,11 @@ xcc = 2.e-7
 __all__ = ['rathe','psi','curvature_2d','bvec','b0','l']
 
 #     ============================================================================
-def rathe(rc, r, z, ci):
+def rathe(rc: float,
+          r: Union[float,np.ndarray],
+          z: Union[float,np.ndarray], 
+          ci:Union[float,np.ndarray] 
+    ) -> Union[float,np.ndarray] :
 #     calculate "atheta" produced by a loop current
 #     rc:loop radius 
 #     r, z:position 
@@ -43,7 +47,11 @@ def rathe(rc, r, z, ci):
 
 
 #     ============================================================================
-def psi(r, z, separatrix=True):
+def psi(
+    r: Union[float,np.ndarray], 
+    z: Union[float,np.ndarray], 
+    separatrix: bool =True
+    ) -> Union[float,np.ndarray]:
 #     ============================================================================
 #     magnetic flux surface
 #     ============================================================================
@@ -69,7 +77,12 @@ def psi(r, z, separatrix=True):
 
 
 #     ============================================================================
-def bloop(rc, r, z, ci):
+def bloop(
+    rc: float,
+    r : Union[float,np.ndarray],
+    z: Union[float,np.ndarray],
+    ci: float
+    ) -> Tuple[Union[float,np.ndarray],Union[float,np.ndarray]]:
 #     calculate the br and bz produced by a loop current
 #     rc:loop radius r, z:position ci:coil current 
 #     ============================================================================
@@ -91,7 +104,12 @@ def bloop(rc, r, z, ci):
 
     return br*np.logical_not(singular), bz
 
-def curvature_2d(r,z,separatrix=True):
+def curvature_2d(
+    r : Union[float,np.ndarray],
+    z: Union[float,np.ndarray],
+    separatrix: bool=True
+    ) -> Union[float,np.ndarray]:
+
     if not r.shape == z.shape:
       print('Error! the shape of r and z is not match')
     dBrdr = np.zeros_like(r)
@@ -138,7 +156,12 @@ def curvature_2d(r,z,separatrix=True):
 
 
 #     ============================================================================
-def bvec(r, z, separatrix=True):
+def bvec(
+    r : Union[float,np.ndarray],
+    z: Union[float,np.ndarray],
+    separatrix: bool=True
+    ) -> Tuple[Union[float,np.ndarray],Union[float,np.ndarray]]:
+
 #     ============================================================================
 #     magnetic field vector
 #     ============================================================================
@@ -157,7 +180,11 @@ def bvec(r, z, separatrix=True):
 
 
 #     ============================================================================
-def b0(r, z, separatrix=True):
+def b0(
+    r : Union[float,np.ndarray],
+    z: Union[float,np.ndarray],
+    separatrix: bool=True
+    ) -> Tuple[Union[float,np.ndarray],Union[float,np.ndarray]]:
 #     ============================================================================
 #     magnetic field strength on the equatorial plane with the same psi
 #     ============================================================================
@@ -206,7 +233,10 @@ def b0(r, z, separatrix=True):
 
 
 #     ============================================================================
-def l(r, z):
+def l(
+    r : float,
+    z:  float,
+    ) -> float:
 #     ============================================================================
 #     magnetic field line length
 #     ============================================================================
