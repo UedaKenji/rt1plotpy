@@ -4,6 +4,8 @@ import numpy as np
 import dxfgrabber
 import cv2
 from typing import Callable, Tuple, Optional, Union, List
+import numba
+from tqdm import tqdm
 
 
 class Frame():
@@ -62,29 +64,41 @@ class Frame():
                 y = self.all_arcs[i].center[1]/1000+  self.all_arcs[i].radius/1000*np.sin(np.pi* self.all_arcs[i].start_angle/180)
                 ax.text(x, y, "a."+str(i), size = 10, color = "red")
         if add_coil:
-            ax.add_patch(
-                patches.Rectangle(xy=(0.214625, -0.0336), 
-                                  width=0.07075,
-                                  height=0.0672,
-                                  edgecolor = 'black',
-                                  facecolor='brown'
-                )
+            self.add_coil(ax)
+
+    def add_coil(
+        self,
+        ax      :plt.axes,
+        **kwargs:dict,
+        ) -> None:
+        
+        default_kwargs = {"edgecolor":'black', 'facecolor':'brown'}
+        default_kwargs.update(kwargs)
+        kwargs = default_kwargs
+
+        ax.add_patch(
+            patches.Rectangle(xy=(0.214625, -0.0336), 
+                              width=0.07075,
+                              height=0.0672,
+                              **kwargs,
             )
-            ax.add_patch(
-                patches.Rectangle(xy=(0.364, 0.528), 
-                                  width=0.072,
-                                  height=0.144,
-                                  edgecolor = 'black',
-                                  facecolor='brown'
-                )
+        )
+        ax.add_patch(
+            patches.Rectangle(xy=(0.364, 0.528), 
+                                width=0.072,
+                                height=0.144,
+                                **kwargs
             )
+        )
+
 
 
     def grid_input(
         self,
         R: np.ndarray,
         Z: np.ndarray,
-        fill_point: Tuple[float,float] = (0.5,0)
+        fill_point: Tuple[float,float] = (0.5,0),
+        fill_point_2nd: Optional[Tuple[float,float]] = None
     ) -> Tuple[np.ndarray, np.ndarray]:
 
         if len(R.shape) == 2:
@@ -100,8 +114,8 @@ class Frame():
                 Z = Z[:,0]
 
         h,w = Z.size,R.size
-        R_extend = np.empty(R.size+1)
-        Z_extend = np.empty(Z.size+1)
+        R_extend = np.empty(R.size+1,dtype=np.float32)
+        Z_extend = np.empty(Z.size+1,dtype=np.float32)
         R_extend[0] =  R[0]  - 0.5* (R[1]-R[0])
         R_extend[-1] = R[-1] + 0.5* (R[-1]-R[-2])
         R_extend[1:-1] = 0.5 * (R[:-1] + R[1:])
@@ -124,10 +138,11 @@ class Frame():
         list1 = ['top','bottom','left','right']
 
         self.Is_bound = np.zeros((Z.size,R.size),np.bool)
-        
-        for i in range(len(self.all_lines)):
+
+        for i in tqdm(range(len(self.all_lines)),desc='Lines detection'):
             R4, Z4 = self.all_lines[i].start[0]/1000, self.all_lines[i].start[1]/1000
             R3, Z3 = self.all_lines[i].end[0]/1000, self.all_lines[i].end[1]/1000
+        
             for mode in list1:
                 if mode == 'top':
                     R1 = R_tr
@@ -161,10 +176,10 @@ class Frame():
                 Z_inter = ( (Z2-Z1) * W1 - (Z4-Z3) * W2 ) / D
                 del W1,W2,D
                 
-                is_in_Rray_range = (R2 - R_inter) * (R1 - R_inter) <= 1.e-10 
-                is_in_Zray_range = (Z2 - Z_inter) * (Z1 - Z_inter) <= 1.e-10 
-                is_in_Rfra_range = (R4 - R_inter) * (R3 - R_inter) <= 1.e-10 
-                is_in_Zfra_range = (Z4 - Z_inter) * (Z3 - Z_inter) <= 1.e-10 
+                is_in_Rray_range = (R2 - R_inter) * (R1 - R_inter) <= 1.e-5 
+                is_in_Zray_range = (Z2 - Z_inter) * (Z1 - Z_inter) <= 1.e-5 
+                is_in_Rfra_range = (R4 - R_inter) * (R3 - R_inter) <= 1.e-5 
+                is_in_Zfra_range = (Z4 - Z_inter) * (Z3 - Z_inter) <= 1.e-5 
                 is_in_range =  np.logical_and(is_in_Rray_range,is_in_Zray_range) * np.logical_and(is_in_Rfra_range,is_in_Zfra_range) 
                 # 水平や垂直  な線に対応するため
 
@@ -172,7 +187,7 @@ class Frame():
 
         
 
-        for i in range(len(self.all_arcs)):
+        for i in tqdm(range(len(self.all_arcs)),desc='Arcs  detection'):
             Rc, Zc =(self.all_arcs[i].center[0]/1000, self.all_arcs[i].center[1]/1000)
             radius = self.all_arcs[i].radius/1000
             sta_angle, end_angle = self.all_arcs[i].start_angle ,self.all_arcs[i].end_angle 
@@ -213,8 +228,8 @@ class Frame():
                 Zi2 = (lZ**2 *Zc + lR*lZ *Rc + lR *S - lZ * np.sqrt(D*exist) ) / (lR**2 + lZ**2)  * exist# 2つ目の交点のZ座標
                 del D, exist
 
-                is_in_ray_range1  = np.logical_and((R2 - Ri1) * (R1 - Ri1) <= 1e-10 ,(Z2 - Zi1) * (Z1- Zi1) <= 1e-10) # 交点1が線分内にあるか判定
-                is_in_ray_range2  = np.logical_and((R2 - Ri2) * (R1 - Ri2) <= 1e-10 ,(Z2 - Zi2) * (Z1- Zi2) <= 1e-10) # 交点2が線分内にあるか判定
+                is_in_ray_range1  = np.logical_and((R2 - Ri1) * (R1 - Ri1) <= 1e-10 ,(Z2 - Zi1) * (Z1- Zi1) <= 1e-5) # 交点1が線分内にあるか判定
+                is_in_ray_range2  = np.logical_and((R2 - Ri2) * (R1 - Ri2) <= 1e-10 ,(Z2 - Zi2) * (Z1- Zi2) <= 1e-5) # 交点2が線分内にあるか判定
 
 
                 cos1 = (Ri1-Rc) / radius
@@ -236,9 +251,8 @@ class Frame():
                 is_real_intercept  = is_real_intercept1 + is_real_intercept2
                 
                 self.Is_bound += is_real_intercept
-        
+        print()
         mask = np.zeros((h,w), np.uint8)
-
 
         # 塗りつぶしの開始インデクスを探索
         i_r,i_z = 0,0
@@ -258,6 +272,20 @@ class Frame():
         mask = np.zeros((h+2, w+2), np.uint8)
         
         cv2.floodFill(self.fill, mask, (i_r,i_z), 2)
+
+        if fill_point_2nd != None:        
+            i_r,i_z = 0,0
+            for i in range(R.size-1):
+                if (R[i] - fill_point_2nd[0])*(R[i+1] - fill_point_2nd[0]  ) <= 0:
+                    i_r =  i 
+                    break 
+            for i in range(Z.size-1):
+                if (Z[i] - fill_point_2nd[1])*(Z[i+1] - fill_point_2nd[1]  ) <= 0:
+                    i_z =  i 
+                    break 
+            print(i_r,i_z)
+            cv2.floodFill(self.fill, mask, (i_r,i_z), 2)
+
 
         self.Is_in = (self.fill == 2)
         self.Is_out = (self.fill == 0)
