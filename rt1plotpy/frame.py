@@ -243,11 +243,11 @@ class Frame():
         # 塗りつぶしの開始インデクスを探索
         i_r,i_z = 0,0
         for i in range(R.size-1):
-            if (R[i] - fill_point[0])*(R[i+1] - fill_point[0]  ) < 0:
+            if (R[i] - fill_point[0])*(R[i+1] - fill_point[0]  ) <= 0:
                 i_r =  i 
                 break 
         for i in range(Z.size-1):
-            if (Z[i] - fill_point[1])*(Z[i+1] - fill_point[1]  ) < 0:
+            if (Z[i] - fill_point[1])*(Z[i+1] - fill_point[1]  ) <= 0:
                 i_z =  i 
                 break 
 
