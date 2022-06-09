@@ -7,6 +7,20 @@
 - dfxgrabber
 ## How to Install 
 
+git cloneした後
+```sh
+python setup.py develop
+```
+Or 
+
+```sh
+pip install git+https://github.com/UedaKenji/rt1_advanced_plot
+```
+### to uninstall 
+```sh
+pip uninstall rt1plotpy
+```
+
 ## How to Use
 1. jupyter notebook を起動する
 1. rt1_plot_example.ipynbを開く
