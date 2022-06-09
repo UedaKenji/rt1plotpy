@@ -1,0 +1,7 @@
+README.md
+setup.py
+rt1plotpy.egg-info/PKG-INFO
+rt1plotpy.egg-info/SOURCES.txt
+rt1plotpy.egg-info/dependency_links.txt
+rt1plotpy.egg-info/requires.txt
+rt1plotpy.egg-info/top_level.txt
