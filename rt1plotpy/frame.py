@@ -341,7 +341,6 @@ class Frame():
                 is_real_intercept  = is_real_intercept1 + is_real_intercept2
                 
                 self.Is_bound += is_real_intercept
-        print()
         mask = np.zeros((h,w), np.uint8)
 
         # 塗りつぶしの開始インデクスを探索
@@ -710,7 +709,6 @@ class Frame_equatorial():
                 is_real_intercept  = is_real_intercept1 + is_real_intercept2
                 
                 self.Is_bound += is_real_intercept
-        print()
         mask = np.zeros((h,w), np.uint8)
 
         # 塗りつぶしの開始インデクスを探索
