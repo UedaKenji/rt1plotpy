@@ -227,7 +227,7 @@ class Frame():
 
         list1 = ['top','bottom','left','right']
 
-        self.Is_bound = np.zeros((Z.size,R.size),np.bool)
+        self.Is_bound = np.zeros((Z.size,R.size),np.bool_)
 
         for i in tqdm(range(len(self.all_lines)),desc='Lines detection', disable=isnt_print):
             R4, Z4 = self.all_lines[i].start[0]/1000, self.all_lines[i].start[1]/1000
@@ -531,7 +531,7 @@ class Frame_equatorial():
 
         list1 = ['top','bottom','left','right']
 
-        self.Is_bound = np.zeros((Z.size,R.size),np.bool)
+        self.Is_bound = np.zeros((Z.size,R.size),np.bool_)
 
         for i in tqdm(range(len(self.all_lines)),desc='Lines detection'):
             R4, Z4 = self.all_lines[i].start[0]/1000, self.all_lines[i].start[1]/1000
