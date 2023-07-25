@@ -1,6 +1,6 @@
 import numpy as np 
 import scipy.special as spe
-from typing import Callable, Tuple, Optional, Union, List
+from typing import Callable, Tuple, Optional, Union, List,TypeVar,cast
 '''
 modified by ueda in 20201008
 古のrt1mag.pyをnumpyのarray を引数にモテるようにモダナイズした。
@@ -17,12 +17,25 @@ xcc = 2.e-7
 
 __all__ = ['rathe','psi','curvature_2d','bvec','b0','l']
 
+float_numpy = TypeVar(" float|np.ndarray ",float,np.ndarray)
+
+def const_like(x:float, type_x:float_numpy)->float_numpy:
+    return cast(float_numpy, x + 0*type_x)
+
+def ones_like(type_x:float_numpy)->float_numpy:
+    return cast(float_numpy, 1.0*type_x)
+
+def zeros_like(type_x:float_numpy)->float_numpy:
+    return cast(float_numpy, 0.0*type_x)
+
+
+
 #     ============================================================================
 def rathe(rc: float,
-          r: Union[float,np.ndarray],
-          z: Union[float,np.ndarray], 
-          ci:Union[float,np.ndarray] 
-    ) -> Union[float,np.ndarray] :
+          r: float_numpy ,
+          z: float_numpy , 
+          ci: float  
+    ) -> float_numpy :
 #     calculate "atheta" produced by a loop current
 #     rc:loop radius 
 #     r, z:position 
@@ -45,13 +58,12 @@ def rathe(rc: float,
     return a0*a1*(a2*fk - fe) * np.logical_not(singular)
 
 
-
 #     ============================================================================
 def psi(
-    r: Union[float,np.ndarray], 
-    z: Union[float,np.ndarray], 
+    r: float_numpy, 
+    z: float_numpy, 
     separatrix: bool =True
-    ) -> Union[float,np.ndarray]:
+    ) -> float_numpy:
 #     ============================================================================
 #     magnetic flux surface
 #     ============================================================================
@@ -79,10 +91,10 @@ def psi(
 #     ============================================================================
 def bloop(
     rc: float,
-    r : Union[float,np.ndarray],
-    z: Union[float,np.ndarray],
+    r : float_numpy,
+    z:  float_numpy,
     ci: float
-    ) -> Tuple[Union[float,np.ndarray],Union[float,np.ndarray]]:
+    ) -> Tuple[float_numpy,float_numpy]:
 #     calculate the br and bz produced by a loop current
 #     rc:loop radius r, z:position ci:coil current 
 #     ============================================================================
@@ -105,10 +117,10 @@ def bloop(
     return br*np.logical_not(singular), bz
 
 def curvature_2d(
-    r : Union[float,np.ndarray],
-    z: Union[float,np.ndarray],
+    r : np.ndarray,
+    z : np.ndarray,
     separatrix: bool=True
-    ) -> Union[float,np.ndarray]:
+    ) -> np.ndarray:
 
     if not r.shape == z.shape:
       print('Error! the shape of r and z is not match')
@@ -145,7 +157,8 @@ def curvature_2d(
     Fz = -r * Br 
     Frr =  Bz + r * dBzdr
     Fzz = -r * dBrdz 
-    Frz = - (Br + r * dBrdr) 
+    Frz = -Br -r *dBrdr
+
     #Fzr = r * dBzdz
     
     R = (Fr**2 + Fz**2)**1.5 / abs(Fr**2 *Fzz - 2*Fr*Fz*Frz + Fz**2 *Frr)
@@ -157,10 +170,10 @@ def curvature_2d(
 
 #     ============================================================================
 def bvec(
-    r : Union[float,np.ndarray],
-    z: Union[float,np.ndarray],
+    r : float_numpy,
+    z:  float_numpy,
     separatrix: bool=True
-    ) -> Tuple[Union[float,np.ndarray],Union[float,np.ndarray]]:
+    ) -> Tuple[float_numpy,float_numpy]:
 
 #     ============================================================================
 #     magnetic field vector
@@ -181,10 +194,10 @@ def bvec(
 
 #     ============================================================================
 def b0(
-    r : Union[float,np.ndarray],
-    z: Union[float,np.ndarray],
+    r : float_numpy,
+    z: float_numpy,
     separatrix: bool=True
-    ) -> Tuple[Union[float,np.ndarray],Union[float,np.ndarray]]:
+    ) -> float_numpy:
 #     ============================================================================
 #     magnetic field strength on the equatorial plane with the same psi
 #     ============================================================================
@@ -194,7 +207,7 @@ def b0(
 
     #    calcuate r with same psi on z=0
     if separatrix:
-        rifz= \
+        rifz = \
         5.048895851e0 \
         -1737.177125e0*p \
         +333629.588e0*p**2 \
@@ -219,16 +232,20 @@ def b0(
         +3.7816742e15*p**8\
         -2.3686326e16*p**9
 
+    rifz = cast(float_numpy,rifz)
 
+        
     #     floating coil
-    br_flt, bz_flt = bloop(0.25, rifz, 0.0, cic)
+    br_flt, bz_flt = bloop(0.25, rifz, 0.0 *ones_like(rifz) , cic)
 
     #     levitating coil
-    br_lev = bz_lev = 0.0
+    br_lev = bz_lev =0
     if separatrix:
-        br_lev, bz_lev = bloop(0.40, rifz, 0.0 - 0.612, cvf2)
+        br_lev, bz_lev = bloop(0.40, rifz, (0.0 - 0.612)*ones_like(rifz), cvf2)
 
-    return np.sqrt( (br_flt + br_lev)**2 + (bz_flt + bz_lev)**2 )
+
+    res = np.sqrt( (br_flt + br_lev)**2 + (bz_flt + bz_lev)**2)
+    return cast(float_numpy,res) 
 
 
 
