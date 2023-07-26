@@ -1,4 +1,5 @@
 import numpy as np 
+import numpy.typing as npt
 import scipy.special as spe
 from typing import Callable, Tuple, Optional, Union, List,TypeVar,cast
 '''
@@ -17,7 +18,7 @@ xcc = 2.e-7
 
 __all__ = ['rathe','psi','curvature_2d','bvec','b0','l']
 
-float_numpy = TypeVar(" float|np.ndarray ",float,np.ndarray)
+float_numpy = TypeVar(" float | NDArray[float64] ",float,npt.NDArray[np.float64])#type: ignore # 怒られているけど、実行する気エラーにならないので無視する。
 
 def const_like(x:float, type_x:float_numpy)->float_numpy:
     return cast(float_numpy, x + 0*type_x)
@@ -94,7 +95,7 @@ def bloop(
     r : float_numpy,
     z:  float_numpy,
     ci: float
-    ) -> Tuple[float_numpy,float_numpy]:
+    ) -> tuple[float_numpy,float_numpy]:
 #     calculate the br and bz produced by a loop current
 #     rc:loop radius r, z:position ci:coil current 
 #     ============================================================================
@@ -117,10 +118,10 @@ def bloop(
     return br*np.logical_not(singular), bz
 
 def curvature_2d(
-    r : np.ndarray,
-    z : np.ndarray,
+    r : npt.NDArray[np.float64],
+    z : npt.NDArray[np.float64],
     separatrix: bool=True
-    ) -> np.ndarray:
+    ) -> npt.NDArray[np.float64]:
 
     if not r.shape == z.shape:
       print('Error! the shape of r and z is not match')
@@ -157,7 +158,7 @@ def curvature_2d(
     Fz = -r * Br 
     Frr =  Bz + r * dBzdr
     Fzz = -r * dBrdz 
-    Frz = -Br -r *dBrdr
+    Frz = -Br -r *dBrdr 
 
     #Fzr = r * dBzdz
     
@@ -173,7 +174,7 @@ def bvec(
     r : float_numpy,
     z:  float_numpy,
     separatrix: bool=True
-    ) -> Tuple[float_numpy,float_numpy]:
+    ) -> tuple[float_numpy,float_numpy]:
 
 #     ============================================================================
 #     magnetic field vector

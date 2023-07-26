@@ -2,10 +2,11 @@ from time import process_time_ns
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 from scipy import signal
 import dxfgrabber
 import cv2
-from typing import Callable, Tuple, Optional, Union, List
+from typing import Callable, Tuple, Optional, Union, List,cast
 import numba
 from tqdm import tqdm
 
@@ -100,11 +101,11 @@ class Frame():
 
     def append_frame(
         self,
-        ax      :plt.axes,
+        ax      :plt.Axes,
         label   :bool=False,
         add_coil:bool=False,
-        **kwargs:dict
-    ) -> None:
+        **kwargs,
+        ) -> None:
 
         default_kwargs = {"linewidth":1, "alpha":1.0, "color":'gray'}
         default_kwargs.update(kwargs)
@@ -138,8 +139,8 @@ class Frame():
 
     def add_coil(
         self,
-        ax      :plt.axes,
-        **kwargs:dict,
+        ax      :plt.Axes,
+        **kwargs,
         ) -> None:
         
         default_kwargs = {"edgecolor":'black', 'facecolor':'brown'}
@@ -150,14 +151,14 @@ class Frame():
             patches.Rectangle(xy=(0.214625, -0.0336), 
                               width=0.07075,
                               height=0.0672,
-                              **kwargs,
+                              **kwargs,#type: ignore
             )
         )
         ax.add_patch(
             patches.Rectangle(xy=(0.364, 0.528), 
                                 width=0.072,
                                 height=0.144,
-                                **kwargs
+                                **kwargs#type: ignore
             )
         )
 
@@ -165,12 +166,12 @@ class Frame():
 
     def grid_input(
         self,
-        R: np.ndarray,
-        Z: np.ndarray,
+        R: npt.NDArray[np.float64],
+        Z: npt.NDArray[np.float64],
         fill_point: Tuple[float,float] = (0.5,0),
-        fill_point_2nd: Optional[Tuple[float,float]] = None,
+        fill_point_2nd: Optional[tuple[float,float]] = None,
         isnt_print: bool = False,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[npt.NDArray[np.float64], tuple]:
         """
         this functions is to return 'mask' and 'extent' np.array for imshow plottting
 
@@ -204,8 +205,8 @@ class Frame():
                 Z = Z[:,0]
 
         h,w = Z.size,R.size
-        R_extend = np.empty(R.size+1,dtype=np.float32)
-        Z_extend = np.empty(Z.size+1,dtype=np.float32)
+        R_extend = np.empty(R.size+1,dtype=np.float64)  
+        Z_extend = np.empty(Z.size+1,dtype=np.float64)
         R_extend[0] =  R[0]  - 0.5* (R[1]-R[0])
         R_extend[-1] = R[-1] + 0.5* (R[-1]-R[-2])
         R_extend[1:-1] = 0.5 * (R[:-1] + R[1:])
@@ -215,7 +216,8 @@ class Frame():
 
 
         RR,ZZ = np.meshgrid(R_extend,Z_extend,indexing='xy')
-
+        RR = cast(npt.NDArray[np.float64],RR)
+        ZZ = cast(npt.NDArray[np.float64],ZZ)
         R_tr = RR[+1:,+1:]
         Z_tr = ZZ[+1:,+1:]
         R_tl = RR[+1:,:-1]
@@ -233,28 +235,36 @@ class Frame():
             R4, Z4 = self.all_lines[i].start[0]/1000, self.all_lines[i].start[1]/1000
             R3, Z3 = self.all_lines[i].end[0]/1000, self.all_lines[i].end[1]/1000
         
-            for mode in list1:
-                if mode == 'top':
-                    R1 = R_tr
-                    R2 = R_tl
-                    Z1 = Z_tr 
-                    Z2 = Z_tl
-                if mode == 'bottom':
-                    R1 = R_br
-                    R2 = R_bl
-                    Z1 = Z_br 
-                    Z2 = Z_bl
-                if mode == 'right':
-                    R1 = R_tr
-                    R2 = R_br
-                    Z1 = Z_tr 
-                    Z2 = Z_br
-                if mode == 'left':
-                    R1 = R_tl
-                    R2 = R_bl
-                    Z1 = Z_tl
-                    Z2 = Z_bl
-            
+            # if 文からmatch文に変更 python >= 3.10
+            for mode in ['top','bottom','left','right']:
+                R1,R2,Z1,Z2 = 0,0,0,0 # unbound で怒られたから回避( 意味のない処理 ) 
+
+                match mode:
+                    case 'top':
+                        R1 = R_tr
+                        R2 = R_tl
+                        Z1 = Z_tr 
+                        Z2 = Z_tl
+                    case 'bottom':
+                        R1 = R_br
+                        R2 = R_bl
+                        Z1 = Z_br 
+                        Z2 = Z_bl
+                    case 'right':
+                        R1 = R_tr
+                        R2 = R_br
+                        Z1 = Z_tr 
+                        Z2 = Z_br
+                    case 'left':
+                        R1 = R_tl
+                        R2 = R_bl
+                        Z1 = Z_tl
+                        Z2 = Z_bl
+
+                Z1= cast(npt.NDArray[np.float64],Z1)
+                Z2= cast(npt.NDArray[np.float64],Z2)
+                R1= cast(npt.NDArray[np.float64],R1)
+                R2= cast(npt.NDArray[np.float64],R2)
                 D = (R4-R3) * (Z2-Z1) - (R2-R1) * (Z4-Z3)
                 W1, W2 = Z3*R4-Z4*R3, Z1*R2 - Z2*R1
 
@@ -283,28 +293,32 @@ class Frame():
             sta_angle, end_angle = self.all_arcs[i].start_angle ,self.all_arcs[i].end_angle 
 
             
-            for mode in list1:
-                if mode == 'top':   
-                    R1 = R_tr
-                    R2 = R_tl
-                    Z1 = Z_tr 
-                    Z2 = Z_tl
-                if mode == 'bottom':
-                    R1 = R_br
-                    R2 = R_bl
-                    Z1 = Z_br 
-                    Z2 = Z_bl
-                if mode == 'right':
-                    R1 = R_tr
-                    R2 = R_br
-                    Z1 = Z_tr 
-                    Z2 = Z_br
-                if mode == 'left':
-                    R1 = R_tl
-                    R2 = R_bl
-                    Z1 = Z_tl
-                    Z2 = Z_bl
-                    
+            # if 文からmatch文に変更 python >= 3.10
+            for mode in ['top','bottom','left','right']:
+                R1,R2,Z1,Z2 = 0,0,0,0 # unbound で怒られたから回避( 意味のない処理 ) 
+                
+                match mode:
+                    case 'top':
+                        R1 = R_tr
+                        R2 = R_tl
+                        Z1 = Z_tr 
+                        Z2 = Z_tl
+                    case 'bottom':
+                        R1 = R_br
+                        R2 = R_bl
+                        Z1 = Z_br 
+                        Z2 = Z_bl
+                    case 'right':
+                        R1 = R_tr
+                        R2 = R_br
+                        Z1 = Z_tr 
+                        Z2 = Z_br
+                    case 'left':
+                        R1 = R_tl
+                        R2 = R_bl
+                        Z1 = Z_tl
+                        Z2 = Z_bl
+
                 lR = R2-R1
                 lZ = Z2-Z1
                 S  = R2*Z1 - R1*Z2      
@@ -408,10 +422,10 @@ class Frame_equatorial():
 
     def append_frame(
         self,
-        ax      :plt.axes,
+        ax      :plt.Axes,
         label   :bool=False,
         add_coil:bool=False,
-        **kwargs:dict
+        **kwargs
     ) -> None:
 
         default_kwargs = {"linewidth":1, "alpha":1.0, "color":'gray'}
@@ -462,8 +476,8 @@ class Frame_equatorial():
 
     def add_coil(
         self,
-        ax      :plt.axes,
-        **kwargs:dict,
+        ax      :plt.Axes,
+        **kwargs,
         ) -> None:
         
         default_kwargs = {"edgecolor":'black', 'facecolor':'brown'}
@@ -474,26 +488,27 @@ class Frame_equatorial():
             patches.Rectangle(xy=(0.214625, -0.0336), 
                               width=0.07075,
                               height=0.0672,
-                              **kwargs,
+                              **kwargs,#type: ignore 
             )
         )
         ax.add_patch(
             patches.Rectangle(xy=(0.364, 0.528), 
                                 width=0.072,
                                 height=0.144,
-                                **kwargs
+                                **kwargs#type: ignore
             )
         )
 
 
 
-    def grid_input(
-        self,
-        R: np.ndarray,
-        Z: np.ndarray,
+    def grid_input(self,
+                   
+        R: npt.NDArray[np.float64],
+        Z: npt.NDArray[np.float64],
         fill_point: Tuple[float,float] = (0.5,0),
         fill_point_2nd: Optional[Tuple[float,float]] = None
-    ) -> Tuple[np.ndarray, np.ndarray]:
+
+    ) -> tuple[npt.NDArray[np.float64], tuple]:
 
         if len(R.shape) == 2:
             if abs(R[-1,0]-R[0,0]) < 1e-3:
@@ -537,28 +552,32 @@ class Frame_equatorial():
             R4, Z4 = self.all_lines[i].start[0]/1000, self.all_lines[i].start[1]/1000
             R3, Z3 = self.all_lines[i].end[0]/1000, self.all_lines[i].end[1]/1000
         
-            for mode in list1:
-                if mode == 'top':
-                    R1 = R_tr
-                    R2 = R_tl
-                    Z1 = Z_tr 
-                    Z2 = Z_tl
-                if mode == 'bottom':
-                    R1 = R_br
-                    R2 = R_bl
-                    Z1 = Z_br 
-                    Z2 = Z_bl
-                if mode == 'right':
-                    R1 = R_tr
-                    R2 = R_br
-                    Z1 = Z_tr 
-                    Z2 = Z_br
-                if mode == 'left':
-                    R1 = R_tl
-                    R2 = R_bl
-                    Z1 = Z_tl
-                    Z2 = Z_bl
-            
+            # if 文からmatch文に変更 python >= 3.10
+            for mode in ['top','bottom','left','right']:
+
+                R1,R2,Z1,Z2 = 0,0,0,0 # unbound で怒られたから回避( 意味のない処理 ) 
+                match mode:
+                    case 'top':
+                        R1 = R_tr
+                        R2 = R_tl
+                        Z1 = Z_tr 
+                        Z2 = Z_tl
+                    case 'bottom':
+                        R1 = R_br
+                        R2 = R_bl
+                        Z1 = Z_br 
+                        Z2 = Z_bl
+                    case 'right':
+                        R1 = R_tr
+                        R2 = R_br
+                        Z1 = Z_tr 
+                        Z2 = Z_br
+                    case 'left':
+                        R1 = R_tl
+                        R2 = R_bl
+                        Z1 = Z_tl
+                        Z2 = Z_bl
+
                 D = (R4-R3) * (Z2-Z1) - (R2-R1) * (Z4-Z3)
                 W1, W2 = Z3*R4-Z4*R3, Z1*R2 - Z2*R1
 
@@ -586,27 +605,31 @@ class Frame_equatorial():
             sta_angle, end_angle = 0.,-1e-3
 
             
-            for mode in list1:
-                if mode == 'top':   
-                    R1 = R_tr
-                    R2 = R_tl
-                    Z1 = Z_tr 
-                    Z2 = Z_tl
-                if mode == 'bottom':
-                    R1 = R_br
-                    R2 = R_bl
-                    Z1 = Z_br 
-                    Z2 = Z_bl
-                if mode == 'right':
-                    R1 = R_tr
-                    R2 = R_br
-                    Z1 = Z_tr 
-                    Z2 = Z_br
-                if mode == 'left':
-                    R1 = R_tl
-                    R2 = R_bl
-                    Z1 = Z_tl
-                    Z2 = Z_bl
+            # if 文からmatch文に変更 python >= 3.10
+            for mode in ['top','bottom','left','right']:
+                R1,R2,Z1,Z2 = 0,0,0,0 # unbound で怒られたから回避( 意味のない処理 ) 
+
+                match mode:
+                    case 'top':
+                        R1 = R_tr
+                        R2 = R_tl
+                        Z1 = Z_tr 
+                        Z2 = Z_tl
+                    case 'bottom':
+                        R1 = R_br
+                        R2 = R_bl
+                        Z1 = Z_br 
+                        Z2 = Z_bl
+                    case 'right':
+                        R1 = R_tr
+                        R2 = R_br
+                        Z1 = Z_tr 
+                        Z2 = Z_br
+                    case 'left':
+                        R1 = R_tl
+                        R2 = R_bl
+                        Z1 = Z_tl
+                        Z2 = Z_bl
                     
                 lR = R2-R1
                 lZ = Z2-Z1
@@ -651,27 +674,31 @@ class Frame_equatorial():
             sta_angle, end_angle = self.all_arcs[i].start_angle ,self.all_arcs[i].end_angle 
 
             
-            for mode in list1:
-                if mode == 'top':   
-                    R1 = R_tr
-                    R2 = R_tl
-                    Z1 = Z_tr 
-                    Z2 = Z_tl
-                if mode == 'bottom':
-                    R1 = R_br
-                    R2 = R_bl
-                    Z1 = Z_br 
-                    Z2 = Z_bl
-                if mode == 'right':
-                    R1 = R_tr
-                    R2 = R_br
-                    Z1 = Z_tr 
-                    Z2 = Z_br
-                if mode == 'left':
-                    R1 = R_tl
-                    R2 = R_bl
-                    Z1 = Z_tl
-                    Z2 = Z_bl
+            # if 文からmatch文に変更 python >= 3.10
+            for mode in ['top','bottom','left','right']:
+                R1,R2,Z1,Z2 = 0,0,0,0 # unbound で怒られたから回避( 意味のない処理 ) 
+
+                match mode:
+                    case 'top':
+                        R1 = R_tr
+                        R2 = R_tl
+                        Z1 = Z_tr 
+                        Z2 = Z_tl
+                    case 'bottom':
+                        R1 = R_br
+                        R2 = R_bl
+                        Z1 = Z_br 
+                        Z2 = Z_bl
+                    case 'right':
+                        R1 = R_tr
+                        R2 = R_br
+                        Z1 = Z_tr 
+                        Z2 = Z_br
+                    case 'left':
+                        R1 = R_tl
+                        R2 = R_bl
+                        Z1 = Z_tl
+                        Z2 = Z_bl
                     
                 lR = R2-R1
                 lZ = Z2-Z1

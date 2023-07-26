@@ -3,7 +3,7 @@ import setuptools
 
 setup(
     name="rt1plotpy",
-    version="0.3.0",
+    version="0.3.1",
     author='Kenji Ueda',
     author_email='kentokamak@gmail.com',
     url="https://github.com/UedaKenji/rt1_advanced_plot",
